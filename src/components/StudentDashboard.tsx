@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Course, Attendance, Result, Timetable } from '../types';
 import { authService } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'attendance' | 'results' | 'timetable' | 'materials' | 'profile'>('overview');
@@ -18,6 +19,9 @@ export default function StudentDashboard() {
 
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ title: string; url: string } | null>(null);
+
+  const { user } = useAuth();
+  const studentId = user?._id || '';
 
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
