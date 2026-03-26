@@ -1,0 +1,11 @@
+backend/
+node_modules/
+.git
+.gitignore
+README.md
+QUICK_START.md
+DEPLOYMENT_GUIDE.md
+dist/
+.env
+.env.local
+package-lock.json
