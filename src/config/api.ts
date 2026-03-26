@@ -1,6 +1,8 @@
 // Backend API Configuration
 // Using Render backend URL for production
-export const API_URL = (import.meta.env.VITE_REACT_APP_API_URL as string | undefined) || 'https://university-management-k0ri.onrender.com';
+export const API_URL = 'https://university-management-k0ri.onrender.com';
+
+console.log('🔧 API Config: Using API_URL:', API_URL);
 
 // Helper function to get auth headers
 export const getAuthHeaders = () => {
