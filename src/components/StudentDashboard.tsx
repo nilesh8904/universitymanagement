@@ -5,31 +5,15 @@ import { authService } from '../services/authService';
 export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'attendance' | 'results' | 'timetable' | 'materials' | 'profile'>('overview');
   
-  const studentId = 'STU001';
-  
-  const [courses] = useState<Course[]>([
-    { id: 'c1', name: 'Data Structures', code: 'CS201', credits: 4, facultyId: 'f1', facultyName: 'Dr. Alice Johnson', programId: 'p1', collegeId: 'col1', semester: 3 },
-    { id: 'c2', name: 'Database Systems', code: 'CS301', credits: 3, facultyId: 'f2', facultyName: 'Prof. Bob Smith', programId: 'p1', collegeId: 'col1', semester: 5 },
-    { id: 'c3', name: 'Machine Learning', code: 'CS401', credits: 4, facultyId: 'f1', facultyName: 'Dr. Alice Johnson', programId: 'p1', collegeId: 'col1', semester: 7 },
-  ]);
+  const [courses, setCourses] = useState<Course[]>([]);
 
-  const [attendance] = useState<Attendance[]>([
-    { id: 'a1', studentId: 'STU001', courseId: 'c1', date: '2024-01-15', status: 'present', markedBy: 'f1' },
-    { id: 'a2', studentId: 'STU001', courseId: 'c1', date: '2024-01-16', status: 'present', markedBy: 'f1' },
-    { id: 'a3', studentId: 'STU001', courseId: 'c1', date: '2024-01-17', status: 'absent', markedBy: 'f1' },
-    { id: 'a4', studentId: 'STU001', courseId: 'c2', date: '2024-01-15', status: 'present', markedBy: 'f2' },
-    { id: 'a5', studentId: 'STU001', courseId: 'c2', date: '2024-01-16', status: 'late', markedBy: 'f2' },
-  ]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
 
   const [materials, setMaterials] = useState<any[]>([]);
 
   const [timetable, setTimetable] = useState<Timetable[]>([]);
 
-  const [results] = useState<Result[]>([
-    { id: 'r1', studentId: 'STU001', courseId: 'c1', examType: 'Midterm', marks: 42, maxMarks: 50, grade: 'A', semester: 3 },
-    { id: 'r2', studentId: 'STU001', courseId: 'c2', examType: 'Midterm', marks: 38, maxMarks: 50, grade: 'B+', semester: 5 },
-    { id: 'r3', studentId: 'STU001', courseId: 'c1', examType: 'Quiz 1', marks: 18, maxMarks: 20, grade: 'A+', semester: 3 },
-  ]);
+  const [results, setResults] = useState<Result[]>([]);
 
 
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -38,6 +22,63 @@ export default function StudentDashboard() {
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
   useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const fetched = await authService.getStudentCourses();
+        const mappedCourses = (fetched || []).map((c: any) => ({
+          id: c._id,
+          name: c.name,
+          code: c.code,
+          credits: c.credits,
+          facultyId: c.faculty?._id || '',
+          facultyName: c.faculty?.name || '',
+          programId: '',
+          collegeId: c.college,
+          semester: c.semester,
+          attendanceRate: c.attendanceRate || 0,
+        }));
+        setCourses(mappedCourses);
+      } catch (error) {
+        console.error('Unable to load student courses:', error);
+      }
+    };
+
+    const loadAttendance = async () => {
+      try {
+        const fetched = await authService.getStudentAttendance();
+        const mappedAttendance = (fetched || []).map((a: any) => ({
+          id: a._id,
+          studentId: a.student?._id || a.student,
+          courseId: a.course?._id || a.course,
+          date: a.date,
+          status: a.status,
+          markedBy: a.markedBy,
+        }));
+        setAttendance(mappedAttendance);
+      } catch (error) {
+        console.error('Unable to load student attendance:', error);
+      }
+    };
+
+    const loadResults = async () => {
+      try {
+        const fetched = await authService.getStudentResults();
+        const mappedResults = (fetched || []).map((r: any) => ({
+          id: r._id,
+          studentId: r.student?._id || r.student,
+          courseId: r.course?._id || r.course,
+          examType: r.examType,
+          marks: r.marks,
+          maxMarks: r.maxMarks,
+          grade: r.grade,
+          semester: r.semester,
+        }));
+        setResults(mappedResults);
+      } catch (error) {
+        console.error('Unable to load student results:', error);
+      }
+    };
+
     const loadMaterials = async () => {
       try {
         const fetched = await authService.getStudentMaterials();
@@ -50,20 +91,26 @@ export default function StudentDashboard() {
     const loadTimetable = async () => {
       try {
         const fetched = await authService.getStudentTimetable();
-        setTimetable(Array.isArray(fetched) ? fetched : []);
+        const mappedTimetable = (fetched || []).map((t: any) => ({
+          id: t._id,
+          courseId: t.course?._id || t.course,
+          day: t.day,
+          startTime: t.startTime,
+          endTime: t.endTime,
+          room: t.room,
+          facultyId: t.faculty?._id || t.faculty,
+        }));
+        setTimetable(mappedTimetable);
       } catch (error) {
         console.error('Unable to load student timetable:', error);
       }
     };
 
+    loadCourses();
+    loadAttendance();
+    loadResults();
     loadMaterials();
     loadTimetable();
-    const materialTimer = setInterval(loadMaterials, 15000); // refresh every 15 seconds for near-real-time
-    const timetableTimer = setInterval(loadTimetable, 30000); // refresh timetable every 30 seconds
-    return () => {
-      clearInterval(materialTimer);
-      clearInterval(timetableTimer);
-    };
   }, []);
 
   const handleViewVideo = (material: { title: string; url: string }) => {
