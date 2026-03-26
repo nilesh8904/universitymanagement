@@ -1,4 +1,4 @@
-import { apiRequest } from '../config/api';
+import { apiRequest, API_URL } from '../config/api';
 
 export interface LoginCredentials {
   email: string;
@@ -19,6 +19,7 @@ export const authService = {
   login: async (credentials: LoginCredentials) => {
     try {
       console.log('🔐 AuthService: Attempting login with:', credentials);
+      console.log('🔐 AuthService: API URL being used:', API_URL);
       const data = await apiRequest('/auth/login', 'POST', credentials);
       console.log('🔐 AuthService: API response:', data);
       
