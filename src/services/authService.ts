@@ -104,6 +104,26 @@ export const authService = {
     return data.data;
   },
 
+  getStudentCourses: async () => {
+    const data = await apiRequest('/student/courses', 'GET');
+    return data.data;
+  },
+
+  getStudentAttendance: async () => {
+    const data = await apiRequest('/student/attendance', 'GET');
+    return data.data;
+  },
+
+  getStudentResults: async () => {
+    const data = await apiRequest('/student/results', 'GET');
+    return data.data;
+  },
+
+  getStudentTimetable: async () => {
+    const data = await apiRequest('/student/timetable', 'GET');
+    return data.data;
+  },
+
   getCollegeCourses: async () => {
     const data = await apiRequest('/college/courses', 'GET');
     return data.data;
