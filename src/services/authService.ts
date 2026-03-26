@@ -119,11 +119,6 @@ export const authService = {
     return data.data;
   },
 
-  getStudentTimetable: async () => {
-    const data = await apiRequest('/student/timetable', 'GET');
-    return data.data;
-  },
-
   getCollegeCourses: async () => {
     const data = await apiRequest('/college/courses', 'GET');
     return data.data;
