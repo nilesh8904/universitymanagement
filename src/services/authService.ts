@@ -83,7 +83,27 @@ export const authService = {
     const data = await apiRequest('/college/faculty', 'POST', payload);
     return data.data;
   },
-  
+
+  getCollegeTimetable: async () => {
+    const data = await apiRequest('/college/timetable', 'GET');
+    return data.data;
+  },
+
+  createCollegeTimetable: async (payload: { course: string; day: string; startTime: string; endTime: string; room: string; faculty: string }) => {
+    const data = await apiRequest('/college/timetable', 'POST', payload);
+    return data.data;
+  },
+
+  getCollegeAttendance: async () => {
+    const data = await apiRequest('/college/attendance', 'GET');
+    return data.data;
+  },
+
+  createCollegeAttendance: async (payload: { course: string; student: string; date: string; status: string }) => {
+    const data = await apiRequest('/college/attendance', 'POST', payload);
+    return data.data;
+  },
+
   getCollegeCourses: async () => {
     const data = await apiRequest('/college/courses', 'GET');
     return data.data;
