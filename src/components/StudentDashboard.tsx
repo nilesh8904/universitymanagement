@@ -86,7 +86,22 @@ export default function StudentDashboard() {
     const loadMaterials = async () => {
       try {
         const fetched = await authService.getStudentMaterials();
-        setMaterials(Array.isArray(fetched) ? fetched : []);
+        console.log('✅ StudentDashboard: student materials fetched:', fetched);
+
+        const mappedMaterials = (fetched || []).map((m: any) => ({
+          id: m._id || m.id,
+          title: m.title || 'Untitled Material',
+          description: m.description || '',
+          url: m.url || '',
+          type: m.type || 'file',
+          courseId: m.course?._id || m.course || '',
+          courseName: m.course?.name || m.courseName || 'Unknown Course',
+          uploadedByName: m.uploadedBy?.name || 'Unknown',
+          createdAt: m.createdAt || m.createdAt,
+          raw: m,
+        }));
+
+        setMaterials(mappedMaterials);
       } catch (error) {
         console.error('Unable to load student materials:', error);
       }
@@ -261,12 +276,13 @@ export default function StudentDashboard() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Videos</h3>
                 <div className="space-y-3">
                   {materials.slice(0, 3).map((material) => {
-                    const course = courses.find(c => c.id === (material.course?._id || material.courseId));
+                    const courseName = material.courseName || 'General';
+                    const uploadedDate = material.createdAt ? new Date(material.createdAt).toLocaleDateString() : 'N/A';
                     return (
-                      <div key={material._id || material.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div key={material.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <div>
                           <p className="font-medium text-gray-900">{material.title}</p>
-                          <p className="text-sm text-gray-600">{course?.name || 'General'} • {new Date(material.uploadedAt).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-600">{courseName} • {uploadedDate}</p>
                         </div>
                         <button
                           onClick={() => handleViewVideo({ title: material.title, url: material.url })}
@@ -496,7 +512,8 @@ export default function StudentDashboard() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {materials.map((material) => {
-                const course = courses.find(c => c.id === material.courseId);
+                const courseName = material.courseName || 'General';
+                const uploadedDate = material.createdAt ? new Date(material.createdAt).toLocaleDateString() : 'N/A';
                 return (
                   <div key={material.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                     <div className="flex items-start justify-between mb-4">
@@ -510,8 +527,8 @@ export default function StudentDashboard() {
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{material.title}</h3>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <p><span className="font-medium">Course:</span> {course?.name}</p>
-                      <p><span className="font-medium">Uploaded:</span> {material.uploadedAt}</p>
+                      <p><span className="font-medium">Course:</span> {courseName}</p>
+                      <p><span className="font-medium">Uploaded:</span> {uploadedDate}</p>
                     </div>
                     <button
                       onClick={() => handleViewVideo({ title: material.title, url: material.url })}
