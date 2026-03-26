@@ -74,6 +74,16 @@ export const authService = {
     return data.data;
   },
 
+  getCollegeFaculty: async () => {
+    const data = await apiRequest('/college/faculty', 'GET');
+    return data.data;
+  },
+
+  createCollegeFaculty: async (payload: { name: string; email: string; facultyInfo?: any }) => {
+    const data = await apiRequest('/college/faculty', 'POST', payload);
+    return data.data;
+  },
+  
   getCollegeCourses: async () => {
     const data = await apiRequest('/college/courses', 'GET');
     return data.data;
