@@ -10,28 +10,13 @@ export default function CollegeAdminDashboard() {
 
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   
-  const [courses, setCourses] = useState<Course[]>([
-    { id: 'c1', name: 'Data Structures', code: 'CS201', credits: 4, facultyId: 'f1', facultyName: 'Dr. Alice Johnson', programId: 'p1', collegeId: 'col1', semester: 3 },
-    { id: 'c2', name: 'Database Systems', code: 'CS301', credits: 3, facultyId: 'f2', facultyName: 'Prof. Bob Smith', programId: 'p1', collegeId: 'col1', semester: 5 },
-    { id: 'c3', name: 'Machine Learning', code: 'CS401', credits: 4, facultyId: 'f1', facultyName: 'Dr. Alice Johnson', programId: 'p1', collegeId: 'col1', semester: 7 },
-  ]);
+  const [courses, setCourses] = useState<Course[]>([]);
 
-  const [faculty, setFaculty] = useState<Faculty[]>([
-    { id: 'f1', name: 'Dr. Alice Johnson', email: 'alice@college.edu', department: 'Computer Science', collegeId: 'col1', specialization: 'AI & ML', phone: '123-456-7890' },
-    { id: 'f2', name: 'Prof. Bob Smith', email: 'bob@college.edu', department: 'Computer Science', collegeId: 'col1', specialization: 'Databases', phone: '123-456-7891' },
-    { id: 'f3', name: 'Dr. Carol White', email: 'carol@college.edu', department: 'Computer Science', collegeId: 'col1', specialization: 'Networks', phone: '123-456-7892' },
-  ]);
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
 
-  const [timetable, setTimetable] = useState<Timetable[]>([
-    { id: 't1', courseId: 'c1', day: 'Monday', startTime: '09:00', endTime: '10:30', room: 'Room 101', facultyId: 'f1' },
-    { id: 't2', courseId: 'c2', day: 'Tuesday', startTime: '11:00', endTime: '12:30', room: 'Room 102', facultyId: 'f2' },
-    { id: 't3', courseId: 'c3', day: 'Wednesday', startTime: '14:00', endTime: '15:30', room: 'Room 103', facultyId: 'f1' },
-  ]);
+  const [timetable, setTimetable] = useState<Timetable[]>([]);
 
-  const [attendance, setAttendance] = useState<Attendance[]>([
-    { id: 'a1', studentId: 'STU001', courseId: 'c1', date: '2024-01-15', status: 'present', markedBy: 'f1' },
-    { id: 'a2', studentId: 'STU002', courseId: 'c1', date: '2024-01-15', status: 'absent', markedBy: 'f1' },
-  ]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
 
   const [materials, setMaterials] = useState<any[]>([]);
 
@@ -60,7 +45,18 @@ export default function CollegeAdminDashboard() {
     async function loadCourses() {
       try {
         const data = await authService.getCollegeCourses();
-        setCourses(data || []);
+        const mappedCourses = (data || []).map((c: any) => ({
+          id: c._id,
+          name: c.name,
+          code: c.code,
+          credits: c.credits,
+          facultyId: c.faculty?._id || '',
+          facultyName: c.faculty?.name || '',
+          programId: '', // not used
+          collegeId: c.college,
+          semester: c.semester,
+        }));
+        setCourses(mappedCourses);
       } catch (error) {
         console.error('Unable to fetch courses', error);
       }
@@ -75,9 +71,65 @@ export default function CollegeAdminDashboard() {
       }
     }
 
+    async function loadFaculty() {
+      try {
+        const data = await authService.getCollegeFaculty();
+        const mappedFaculty = (data || []).map((f: any) => ({
+          id: f._id,
+          name: f.name,
+          email: f.email,
+          department: f.facultyInfo?.department || '',
+          collegeId: f.collegeId,
+          specialization: f.facultyInfo?.specialization || '',
+          phone: f.facultyInfo?.phone || '',
+        }));
+        setFaculty(mappedFaculty);
+      } catch (error) {
+        console.error('Unable to fetch faculty', error);
+      }
+    }
+
+    async function loadTimetable() {
+      try {
+        const data = await authService.getCollegeTimetable();
+        const mappedTimetable = (data || []).map((t: any) => ({
+          id: t._id,
+          courseId: t.course?._id || t.course,
+          day: t.day,
+          startTime: t.startTime,
+          endTime: t.endTime,
+          room: t.room,
+          facultyId: t.faculty?._id || t.faculty,
+        }));
+        setTimetable(mappedTimetable);
+      } catch (error) {
+        console.error('Unable to fetch timetable', error);
+      }
+    }
+
+    async function loadAttendance() {
+      try {
+        const data = await authService.getCollegeAttendance();
+        const mappedAttendance = (data || []).map((a: any) => ({
+          id: a._id,
+          studentId: a.student?._id || a.student,
+          courseId: a.course?._id || a.course,
+          date: a.date,
+          status: a.status,
+          markedBy: a.markedBy,
+        }));
+        setAttendance(mappedAttendance);
+      } catch (error) {
+        console.error('Unable to fetch attendance', error);
+      }
+    }
+
     loadStudents();
     loadCourses();
     loadMaterials();
+    loadFaculty();
+    loadTimetable();
+    loadAttendance();
   }, []);
 
   const handleAddCourse = async () => {
@@ -91,7 +143,19 @@ export default function CollegeAdminDashboard() {
           semester: newCourse.semester,
         });
 
-        setCourses([created, ...courses]);
+        const mappedCreated = {
+          id: created._id,
+          name: created.name,
+          code: created.code,
+          credits: created.credits,
+          facultyId: created.faculty?._id || '',
+          facultyName: created.faculty?.name || '',
+          programId: '',
+          collegeId: created.college,
+          semester: created.semester,
+        };
+
+        setCourses([mappedCreated, ...courses]);
         setNewCourse({ name: '', code: '', credits: 3, facultyId: '', semester: 1 });
         setShowAddCourse(false);
         alert('Course created successfully!');
@@ -126,11 +190,40 @@ export default function CollegeAdminDashboard() {
     }
   };
 
-  const handleAddFaculty = () => {
-    if (newFaculty.name && newFaculty.email) {
-      setFaculty([...faculty, { ...newFaculty, id: `f${faculty.length + 1}`, collegeId: 'col1' }]);
+  const handleAddFaculty = async () => {
+    if (!newFaculty.name || !newFaculty.email) {
+      alert('Please fill in faculty name and email.');
+      return;
+    }
+
+    try {
+      const created = await authService.createCollegeFaculty({
+        name: newFaculty.name,
+        email: newFaculty.email,
+        facultyInfo: {
+          department: newFaculty.department,
+          specialization: newFaculty.specialization,
+          phone: newFaculty.phone,
+        },
+      });
+
+      const mappedCreated = {
+        id: created._id,
+        name: created.name,
+        email: created.email,
+        department: created.facultyInfo?.department || '',
+        collegeId: created.collegeId,
+        specialization: created.facultyInfo?.specialization || '',
+        phone: created.facultyInfo?.phone || '',
+      };
+
+      setFaculty([...faculty, mappedCreated]);
       setNewFaculty({ name: '', email: '', department: '', specialization: '', phone: '' });
       setShowAddFaculty(false);
+      alert('Faculty created successfully');
+    } catch (error: any) {
+      console.error('Unable to add faculty:', error);
+      alert(error?.message || 'Failed to create faculty.');
     }
   };
 
@@ -178,24 +271,73 @@ export default function CollegeAdminDashboard() {
     }
   };
 
-  const handleAddTimetable = () => {
-    if (newTimetable.courseId && newTimetable.startTime && newTimetable.endTime) {
-      setTimetable([...timetable, { ...newTimetable, id: `t${timetable.length + 1}` }]);
+  const handleAddTimetable = async () => {
+    if (!newTimetable.courseId || !newTimetable.startTime || !newTimetable.endTime) {
+      alert('Please fill in course, start time, and end time.');
+      return;
+    }
+
+    try {
+      const created = await authService.createCollegeTimetable({
+        course: newTimetable.courseId,
+        day: newTimetable.day,
+        startTime: newTimetable.startTime,
+        endTime: newTimetable.endTime,
+        room: newTimetable.room,
+        faculty: newTimetable.facultyId,
+      });
+
+      const mappedCreated = {
+        id: created._id,
+        courseId: created.course?._id || created.course,
+        day: created.day,
+        startTime: created.startTime,
+        endTime: created.endTime,
+        room: created.room,
+        facultyId: created.faculty?._id || created.faculty,
+      };
+
+      setTimetable([...timetable, mappedCreated]);
       setNewTimetable({ courseId: '', day: 'Monday', startTime: '', endTime: '', room: '', facultyId: '' });
       setShowAddTimetable(false);
+      alert('Timetable entry created successfully');
+    } catch (error: any) {
+      console.error('Unable to add timetable:', error);
+      alert(error?.message || 'Failed to create timetable entry.');
     }
   };
 
 
-  const handleMarkAttendance = () => {
-    if (newAttendance.studentId && newAttendance.courseId && newAttendance.date) {
-      setAttendance([...attendance, {
-        ...newAttendance,
-        id: `a${attendance.length + 1}`,
-        markedBy: 'f1'
-      }]);
+  const handleMarkAttendance = async () => {
+    if (!newAttendance.studentId || !newAttendance.courseId || !newAttendance.date) {
+      alert('Please fill in student, course, and date.');
+      return;
+    }
+
+    try {
+      const created = await authService.createCollegeAttendance({
+        course: newAttendance.courseId,
+        student: newAttendance.studentId,
+        date: newAttendance.date,
+        status: newAttendance.status,
+      });
+
+      const mappedCreated = {
+        id: created._id,
+        studentId: created.student?._id || created.student,
+        courseId: created.course?._id || created.course,
+        date: created.date,
+        status: created.status,
+        markedBy: created.markedBy,
+      };
+
+      setAttendance([...attendance, mappedCreated]);
       setNewAttendance({ studentId: '', courseId: '', date: '', status: 'present' });
       setShowMarkAttendance(false);
+      alert('Attendance marked successfully');
+    } catch (error: any) {
+      console.error('Unable to mark attendance:', error);
+      alert(error?.message || 'Failed to mark attendance.');
     }
   };
 
@@ -705,11 +847,12 @@ export default function CollegeAdminDashboard() {
                 <tbody className="divide-y divide-gray-200">
                   {attendance.map((record) => {
                     const course = courses.find(c => c.id === record.courseId);
+                    const student = students.find(s => s._id === record.studentId);
                     return (
                       <tr key={record.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.studentId}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{student?.name || record.studentId}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{course?.name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{record.date}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{new Date(record.date).toLocaleDateString()}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             record.status === 'present' ? 'bg-green-100 text-green-800' :
@@ -731,13 +874,16 @@ export default function CollegeAdminDashboard() {
                 <div className="bg-white rounded-xl p-6 max-w-md w-full">
                   <h3 className="text-xl font-semibold mb-4">Mark Attendance</h3>
                   <div className="space-y-4">
-                    <input
-                      type="text"
-                      placeholder="Student ID"
+                    <select
                       value={newAttendance.studentId}
                       onChange={(e) => setNewAttendance({ ...newAttendance, studentId: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+                    >
+                      <option value="">Select Student</option>
+                      {students.map((s) => (
+                        <option key={s._id} value={s._id}>{s.name} ({s.email})</option>
+                      ))}
+                    </select>
                     <select
                       value={newAttendance.courseId}
                       onChange={(e) => setNewAttendance({ ...newAttendance, courseId: e.target.value })}
