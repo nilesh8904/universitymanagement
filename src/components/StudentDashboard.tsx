@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Course, Attendance, Result, Timetable } from '../types';
 import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config/api';
 
 export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'attendance' | 'results' | 'timetable' | 'materials' | 'profile'>('overview');
@@ -11,6 +12,7 @@ export default function StudentDashboard() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
 
   const [materials, setMaterials] = useState<any[]>([]);
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
 
   const [timetable, setTimetable] = useState<Timetable[]>([]);
 
@@ -83,27 +85,45 @@ export default function StudentDashboard() {
       }
     };
 
-    const loadMaterials = async () => {
+    const loadMaterials = async (courseId?: string) => {
       try {
-        const fetched = await authService.getStudentMaterials();
-        console.log('✅ StudentDashboard: student materials fetched:', fetched);
+        let url = '/student/materials';
+        if (courseId && courseId !== 'all') {
+          url += `?courseId=${courseId}`;
+        }
+        const response = await fetch(`${API_URL}${url}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          const fetched = data.data;
+          console.log('✅ StudentDashboard: student materials fetched:', fetched);
 
-        const mappedMaterials = (fetched || []).map((m: any) => ({
-          id: m._id || m.id,
-          title: m.title || 'Untitled Material',
-          description: m.description || '',
-          url: m.url || '',
-          type: m.type || 'file',
-          courseId: m.course?._id || m.course || '',
-          courseName: m.course?.name || m.courseName || 'Unknown Course',
-          uploadedByName: m.uploadedBy?.name || 'Unknown',
-          createdAt: m.createdAt || m.createdAt,
-          raw: m,
-        }));
+          const mappedMaterials = (fetched || []).map((m: any) => ({
+            id: m._id || m.id,
+            title: m.title || 'Untitled Material',
+            description: m.description || '',
+            url: m.url || '',
+            type: m.type || 'file',
+            courseId: m.course?._id || m.course || '',
+            courseName: m.course?.name || m.courseName || 'Unknown Course',
+            uploadedByName: m.uploadedBy?.name || 'Unknown',
+            createdAt: m.createdAt || m.createdAt,
+            raw: m,
+          }));
 
-        setMaterials(mappedMaterials);
+          setMaterials(mappedMaterials);
+        } else {
+          console.error('Failed to fetch materials:', data.message);
+          setMaterials([]);
+        }
       } catch (error) {
         console.error('Unable to load student materials:', error);
+        setMaterials([]);
       }
     };
 
@@ -131,6 +151,12 @@ export default function StudentDashboard() {
     loadMaterials();
     loadTimetable();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'materials') {
+      loadMaterials(selectedCourseFilter);
+    }
+  }, [selectedCourseFilter, activeTab]);
 
   const handleViewVideo = (material: { title: string; url: string }) => {
     setSelectedVideo(material);
@@ -508,36 +534,84 @@ export default function StudentDashboard() {
 
         {activeTab === 'materials' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Course Videos</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Course Materials</h2>
+              <div className="flex items-center space-x-4">
+                <label htmlFor="courseFilter" className="text-sm font-medium text-gray-700">Filter by Course:</label>
+                <select
+                  id="courseFilter"
+                  value={selectedCourseFilter}
+                  onChange={(e) => setSelectedCourseFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All Courses</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.name} ({course.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {materials.map((material) => {
                 const courseName = material.courseName || 'General';
                 const uploadedDate = material.createdAt ? new Date(material.createdAt).toLocaleDateString() : 'N/A';
+                const isVideo = material.type === 'video' || material.url.includes('video') || material.url.includes('mp4');
+                
                 return (
                   <div key={material.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-                        <svg className="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                          <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
+                      <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${
+                        isVideo ? 'bg-red-100' : 'bg-blue-100'
+                      }`}>
+                        {isVideo ? (
+                          <svg className="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                          </svg>
+                        ) : (
+                          <svg className="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                          </svg>
+                        )}
                       </div>
-                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Video</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        isVideo ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {isVideo ? 'Video' : 'Material'}
+                      </span>
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{material.title}</h3>
+                    {material.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{material.description}</p>
+                    )}
                     <div className="space-y-2 text-sm text-gray-600">
                       <p><span className="font-medium">Course:</span> {courseName}</p>
                       <p><span className="font-medium">Uploaded:</span> {uploadedDate}</p>
                     </div>
                     <button
-                      onClick={() => handleViewVideo({ title: material.title, url: material.url })}
-                      className="w-full mt-4 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                      onClick={() => isVideo ? handleViewVideo({ title: material.title, url: material.url }) : window.open(material.url, '_blank')}
+                      className={`w-full mt-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                        isVideo ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
                     >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"></path>
-                      </svg>
-                      <span>View Video</span>
+                      {isVideo ? (
+                        <>
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"></path>
+                          </svg>
+                          <span>View Video</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                          </svg>
+                          <span>View Material</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 );
@@ -570,6 +644,21 @@ export default function StudentDashboard() {
                   </div>
                   <p className="text-sm text-gray-600 mt-4 text-center">Video from Cloudinary</p>
                 </div>
+              </div>
+            )}
+
+            {materials.length === 0 && (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No materials found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {selectedCourseFilter === 'all' 
+                    ? 'No materials available for your enrolled courses.' 
+                    : 'No materials found for the selected course.'
+                  }
+                </p>
               </div>
             )}
           </div>
