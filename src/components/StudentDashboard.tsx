@@ -315,64 +315,39 @@ export default function StudentDashboard() {
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Available Materials</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">
-                      {materials.length}
-                    </p>
+                    <p className="text-sm text-gray-600">College Faculty</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{faculty.length}</p>
                   </div>
-                  <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7C8 5.895 8.895 5 10 5s2 .895 2 2-0.895 2-2 2-2-.895-2-2zm0 4c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM16 7c0-1.105-.895-2-2-2s-2 .895-2 2 .895 2 2 2 2-.895 2-2zm-8 6c1.333 0 4 .667 4 2v1H4v-1c0-1.333 2.667-2 4-2zm8 0c1.333 0 4 .667 4 2v1h-8v-1c0-1.333 2.667-2 4-2z" />
                     </svg>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Videos</h3>
-                <div className="space-y-3">
-                  {materials.slice(0, 3).map((material) => {
-                    const courseName = material.courseName || 'General';
-                    const uploadedDate = material.createdAt ? new Date(material.createdAt).toLocaleDateString() : 'N/A';
-                    return (
-                      <div key={material.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{material.title}</p>
-                          <p className="text-sm text-gray-600">{courseName} • {uploadedDate}</p>
-                        </div>
-                        <button
-                          onClick={() => handleViewVideo({ title: material.title, url: material.url })}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Watch
-                        </button>
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Videos</h3>
+              <div className="space-y-3">
+                {materials.slice(0, 3).map((material) => {
+                  const courseName = material.courseName || 'General';
+                  const uploadedDate = material.createdAt ? new Date(material.createdAt).toLocaleDateString() : 'N/A';
+                  return (
+                    <div key={material.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">{material.title}</p>
+                        <p className="text-sm text-gray-600">{courseName} • {uploadedDate}</p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Results</h3>
-                <div className="space-y-3">
-                  {results.slice(0, 3).map((result) => {
-                    const course = courses.find(c => c.id === result.courseId);
-                    return (
-                      <div key={result.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{course?.name}</p>
-                          <p className="text-sm text-gray-600">{result.examType}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">{result.grade}</p>
-                          <p className="text-xs text-gray-500">{result.marks}/{result.maxMarks}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      <button
+                        onClick={() => handleViewVideo({ title: material.title, url: material.url })}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Watch
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
