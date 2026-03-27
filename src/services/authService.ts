@@ -65,6 +65,16 @@ export const authService = {
     return data.data;
   },
 
+  getPrograms: async () => {
+    const data = await apiRequest('/university/programs', 'GET');
+    return data.data;
+  },
+
+  createProgram: async (payload: { name: string; code: string; duration: string; degree: string; college: string; department: string }) => {
+    const data = await apiRequest('/university/programs', 'POST', payload);
+    return data.data;
+  },
+
   getCollegeStudents: async () => {
     const data = await apiRequest('/college/students', 'GET');
     return data.data;
