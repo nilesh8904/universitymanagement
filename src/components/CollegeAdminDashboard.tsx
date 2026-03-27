@@ -26,6 +26,11 @@ export default function CollegeAdminDashboard() {
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   const [showMarkAttendance, setShowMarkAttendance] = useState(false);
 
+  const [showEnrollStudents, setShowEnrollStudents] = useState(false);
+  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<string | null>(null);
+  const [enrolledStudents, setEnrolledStudents] = useState<User[]>([]);
+  const [selectedStudentToEnroll, setSelectedStudentToEnroll] = useState<string>('');
+
   const [newCourse, setNewCourse] = useState({ name: '', code: '', credits: 3, facultyId: '', semester: 1 });
   const [newFaculty, setNewFaculty] = useState({ name: '', email: '', department: '', specialization: '', phone: '' });
   const [newTimetable, setNewTimetable] = useState({ courseId: '', day: 'Monday', startTime: '', endTime: '', room: '', facultyId: '' });
@@ -348,6 +353,56 @@ export default function CollegeAdminDashboard() {
     }
   };
 
+  const handleEnrollStudent = async () => {
+    if (!selectedCourseForEnrollment || !selectedStudentToEnroll) {
+      alert('Please select a student to enroll.');
+      return;
+    }
+
+    try {
+      await authService.enrollStudentInCourse(selectedCourseForEnrollment, selectedStudentToEnroll);
+      
+      // Refresh enrolled students list
+      const enrolled = await authService.getEnrolledStudents(selectedCourseForEnrollment);
+      setEnrolledStudents(enrolled || []);
+      
+      setSelectedStudentToEnroll('');
+      alert('Student enrolled successfully');
+    } catch (error: any) {
+      console.error('Unable to enroll student:', error);
+      alert(error?.message || 'Failed to enroll student.');
+    }
+  };
+
+  const handleUnenrollStudent = async (studentId: string) => {
+    if (!selectedCourseForEnrollment) return;
+
+    try {
+      await authService.unenrollStudentFromCourse(selectedCourseForEnrollment, studentId);
+      
+      // Refresh enrolled students list
+      const enrolled = await authService.getEnrolledStudents(selectedCourseForEnrollment);
+      setEnrolledStudents(enrolled || []);
+      
+      alert('Student unenrolled successfully');
+    } catch (error: any) {
+      console.error('Unable to unenroll student:', error);
+      alert(error?.message || 'Failed to unenroll student.');
+    }
+  };
+
+  const openEnrollModal = async (courseId: string) => {
+    setSelectedCourseForEnrollment(courseId);
+    try {
+      const enrolled = await authService.getEnrolledStudents(courseId);
+      setEnrolledStudents(enrolled || []);
+      setShowEnrollStudents(true);
+    } catch (error) {
+      console.error('Unable to fetch enrolled students:', error);
+      alert('Failed to load enrolled students.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
@@ -457,6 +512,7 @@ export default function CollegeAdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Credits</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Faculty</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Semester</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -467,6 +523,14 @@ export default function CollegeAdminDashboard() {
                       <td className="px-6 py-4 text-sm text-gray-600">{course.credits}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{course.facultyName}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{course.semester}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        <button
+                          onClick={() => openEnrollModal(course.id)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          Enroll Students
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -528,6 +592,76 @@ export default function CollegeAdminDashboard() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {showEnrollStudents && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <h3 className="text-xl font-semibold mb-4">Enroll Students</h3>
+              
+              <div className="mb-6">
+                <h4 className="text-lg font-medium mb-3">Enrolled Students ({enrolledStudents.length})</h4>
+                {enrolledStudents.length > 0 ? (
+                  <div className="space-y-2">
+                    {enrolledStudents.map((student) => (
+                      <div key={student._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">{student.name}</p>
+                          <p className="text-sm text-gray-600">{student.email}</p>
+                        </div>
+                        <button
+                          onClick={() => handleUnenrollStudent(student._id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Unenroll
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No students enrolled yet.</p>
+                )}
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="text-lg font-medium mb-3">Enroll New Student</h4>
+                <div className="space-y-4">
+                  <select
+                    value={selectedStudentToEnroll}
+                    onChange={(e) => setSelectedStudentToEnroll(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Student</option>
+                    {students
+                      .filter(student => !enrolledStudents.some(enrolled => enrolled._id === student._id))
+                      .map((student) => (
+                        <option key={student._id} value={student._id}>{student.name} ({student.email})</option>
+                      ))}
+                  </select>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleEnrollStudent}
+                      disabled={!selectedStudentToEnroll}
+                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      Enroll Student
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowEnrollStudents(false);
+                        setSelectedCourseForEnrollment(null);
+                        setEnrolledStudents([]);
+                        setSelectedStudentToEnroll('');
+                      }}
+                      className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
