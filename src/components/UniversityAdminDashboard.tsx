@@ -251,8 +251,8 @@ export default function UniversityAdminDashboard() {
                       <p className="text-sm text-gray-600">Dean: {college.dean}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">{college.totalStudents} Students</p>
-                      <p className="text-sm text-gray-600">{college.totalFaculty} Faculty</p>
+                      <p className="text-sm text-gray-600">{(college.totalStudents || 0).toLocaleString()} Students</p>
+                      <p className="text-sm text-gray-600">{(college.totalFaculty || 0).toLocaleString()} Faculty</p>
                     </div>
                   </div>
                 ))}
