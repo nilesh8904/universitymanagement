@@ -152,8 +152,8 @@ export default function UniversityAdminDashboard() {
     }
   };
 
-  const totalStudents = colleges.reduce((sum, col) => sum + col.totalStudents, 0);
-  const totalFaculty = colleges.reduce((sum, col) => sum + col.totalFaculty, 0);
+  const totalStudents = colleges.reduce((sum, col) => sum + (col.totalStudents || 0), 0);
+  const totalFaculty = colleges.reduce((sum, col) => sum + (col.totalFaculty || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -477,12 +477,12 @@ export default function UniversityAdminDashboard() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Distribution</h3>
                 <div className="space-y-3">
                   {colleges.map((college) => {
-                    const percentage = (college.totalStudents / totalStudents) * 100;
+                    const percentage = totalStudents > 0 ? ((college.totalStudents || 0) / totalStudents) * 100 : 0;
                     return (
                       <div key={college.id}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-700">{college.name}</span>
-                          <span className="text-gray-900 font-medium">{college.totalStudents} ({percentage.toFixed(1)}%)</span>
+                          <span className="text-gray-900 font-medium">{college.totalStudents || 0} ({percentage.toFixed(1)}%)</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
@@ -500,12 +500,12 @@ export default function UniversityAdminDashboard() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Faculty Distribution</h3>
                 <div className="space-y-3">
                   {colleges.map((college) => {
-                    const percentage = (college.totalFaculty / totalFaculty) * 100;
+                    const percentage = totalFaculty > 0 ? ((college.totalFaculty || 0) / totalFaculty) * 100 : 0;
                     return (
                       <div key={college.id}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-700">{college.name}</span>
-                          <span className="text-gray-900 font-medium">{college.totalFaculty} ({percentage.toFixed(1)}%)</span>
+                          <span className="text-gray-900 font-medium">{college.totalFaculty || 0} ({percentage.toFixed(1)}%)</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
@@ -523,7 +523,8 @@ export default function UniversityAdminDashboard() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Student-Faculty Ratio</h3>
                 <div className="space-y-4">
                   {colleges.map((college) => {
-                    const ratio = (college.totalStudents || 0 / college.totalFaculty || 0).toFixed(1);
+                    const facultyCount = college.totalFaculty || 1;
+                    const ratio = ((college.totalStudents || 0) / facultyCount).toFixed(1);
                     return (
                       <div key={college._id || college.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span className="text-gray-700">{college.name}</span>
