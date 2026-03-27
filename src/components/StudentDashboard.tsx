@@ -98,33 +98,51 @@ export default function StudentDashboard() {
           'Content-Type': 'application/json',
         },
       });
+      
+      console.log('📡 Response status:', response.status);
       const data = await response.json();
+      console.log('📦 Raw API response:', data);
       
       if (data.success) {
-        const fetched = data.data;
-        console.log(`✅ StudentDashboard: ${fetched?.length || 0} materials fetched:`, fetched);
+        const fetched = data.data || [];
+        console.log(`✅ StudentDashboard: ${fetched.length} materials fetched`);
+        
+        if (!Array.isArray(fetched)) {
+          console.error('❌ Data is not an array:', fetched);
+          setMaterials([]);
+          return;
+        }
 
-        const mappedMaterials = (fetched || []).map((m: any) => ({
-          id: m._id || m.id,
-          title: m.title || 'Untitled Material',
-          description: m.description || '',
-          url: m.url || '',
-          type: m.type || 'file',
-          courseId: m.course?._id || m.course || '',
-          courseName: m.course?.name || m.courseName || 'Unknown Course',
-          uploadedByName: m.uploadedBy?.name || 'Unknown',
-          createdAt: m.uploadedAt || m.createdAt,
-          raw: m,
-        }));
+        const mappedMaterials = fetched.map((m: any, idx: number) => {
+          console.log(`📄 Material ${idx + 1}:`, {
+            title: m.title,
+            type: m.type,
+            course: m.course?.name || m.course,
+            url: m.url?.substring(0, 50),
+          });
+          
+          return {
+            id: m._id || m.id,
+            title: m.title || 'Untitled Material',
+            description: m.description || '',
+            url: m.url || '',
+            type: m.type || 'file',
+            courseId: m.course?._id || m.course || '',
+            courseName: m.course?.name || m.courseName || 'Unknown Course',
+            uploadedByName: m.uploadedBy?.name || 'Unknown',
+            createdAt: m.uploadedAt || m.createdAt,
+            raw: m,
+          };
+        });
 
-        console.log(`📊 Total materials to display: ${mappedMaterials.length}`);
+        console.log(`📊 Mapped materials count: ${mappedMaterials.length}`);
         setMaterials(mappedMaterials);
       } else {
-        console.error('Failed to fetch materials:', data.message);
+        console.error('❌ API returned success: false', data.message);
         setMaterials([]);
       }
     } catch (error) {
-      console.error('Unable to load student materials:', error);
+      console.error('❌ Error loading materials:', error);
       setMaterials([]);
     }
   };
