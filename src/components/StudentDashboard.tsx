@@ -27,124 +27,124 @@ export default function StudentDashboard() {
 
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
-  useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        const fetched = await authService.getStudentCourses();
-        const mappedCourses = (fetched || []).map((c: any) => ({
-          id: c._id,
-          name: c.name,
-          code: c.code,
-          credits: c.credits,
-          facultyId: c.faculty?._id || '',
-          facultyName: c.faculty?.name || '',
-          programId: '',
-          collegeId: c.college,
-          semester: c.semester,
-          attendanceRate: c.attendanceRate || 0,
-        }));
-        setCourses(mappedCourses);
-      } catch (error) {
-        console.error('Unable to load student courses:', error);
+  const loadCourses = async () => {
+    try {
+      const fetched = await authService.getStudentCourses();
+      const mappedCourses = (fetched || []).map((c: any) => ({
+        id: c._id,
+        name: c.name,
+        code: c.code,
+        credits: c.credits,
+        facultyId: c.faculty?._id || '',
+        facultyName: c.faculty?.name || '',
+        programId: '',
+        collegeId: c.college,
+        semester: c.semester,
+        attendanceRate: c.attendanceRate || 0,
+      }));
+      setCourses(mappedCourses);
+    } catch (error) {
+      console.error('Unable to load student courses:', error);
+    }
+  };
+
+  const loadAttendance = async () => {
+    try {
+      const fetched = await authService.getStudentAttendance();
+      const mappedAttendance = (fetched || []).map((a: any) => ({
+        id: a._id,
+        studentId: a.student?._id || a.student,
+        courseId: a.course?._id || a.course,
+        date: a.date,
+        status: a.status,
+        markedBy: a.markedBy,
+      }));
+      setAttendance(mappedAttendance);
+    } catch (error) {
+      console.error('Unable to load student attendance:', error);
+    }
+  };
+
+  const loadResults = async () => {
+    try {
+      const fetched = await authService.getStudentResults();
+      const mappedResults = (fetched || []).map((r: any) => ({
+        id: r._id,
+        studentId: r.student?._id || r.student,
+        courseId: r.course?._id || r.course,
+        examType: r.examType,
+        marks: r.marks,
+        maxMarks: r.maxMarks,
+        grade: r.grade,
+        semester: r.semester,
+      }));
+      setResults(mappedResults);
+    } catch (error) {
+      console.error('Unable to load student results:', error);
+    }
+  };
+
+  const loadMaterials = async (courseId?: string) => {
+    try {
+      let url = '/student/materials';
+      if (courseId && courseId !== 'all') {
+        url += `?courseId=${courseId}`;
       }
-    };
+      const response = await fetch(`${API_URL}${url}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        const fetched = data.data;
+        console.log('✅ StudentDashboard: student materials fetched:', fetched);
 
-    const loadAttendance = async () => {
-      try {
-        const fetched = await authService.getStudentAttendance();
-        const mappedAttendance = (fetched || []).map((a: any) => ({
-          id: a._id,
-          studentId: a.student?._id || a.student,
-          courseId: a.course?._id || a.course,
-          date: a.date,
-          status: a.status,
-          markedBy: a.markedBy,
+        const mappedMaterials = (fetched || []).map((m: any) => ({
+          id: m._id || m.id,
+          title: m.title || 'Untitled Material',
+          description: m.description || '',
+          url: m.url || '',
+          type: m.type || 'file',
+          courseId: m.course?._id || m.course || '',
+          courseName: m.course?.name || m.courseName || 'Unknown Course',
+          uploadedByName: m.uploadedBy?.name || 'Unknown',
+          createdAt: m.uploadedAt || m.createdAt,
+          raw: m,
         }));
-        setAttendance(mappedAttendance);
-      } catch (error) {
-        console.error('Unable to load student attendance:', error);
-      }
-    };
 
-    const loadResults = async () => {
-      try {
-        const fetched = await authService.getStudentResults();
-        const mappedResults = (fetched || []).map((r: any) => ({
-          id: r._id,
-          studentId: r.student?._id || r.student,
-          courseId: r.course?._id || r.course,
-          examType: r.examType,
-          marks: r.marks,
-          maxMarks: r.maxMarks,
-          grade: r.grade,
-          semester: r.semester,
-        }));
-        setResults(mappedResults);
-      } catch (error) {
-        console.error('Unable to load student results:', error);
-      }
-    };
-
-    const loadMaterials = async (courseId?: string) => {
-      try {
-        let url = '/student/materials';
-        if (courseId && courseId !== 'all') {
-          url += `?courseId=${courseId}`;
-        }
-        const response = await fetch(`${API_URL}${url}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-          const fetched = data.data;
-          console.log('✅ StudentDashboard: student materials fetched:', fetched);
-
-          const mappedMaterials = (fetched || []).map((m: any) => ({
-            id: m._id || m.id,
-            title: m.title || 'Untitled Material',
-            description: m.description || '',
-            url: m.url || '',
-            type: m.type || 'file',
-            courseId: m.course?._id || m.course || '',
-            courseName: m.course?.name || m.courseName || 'Unknown Course',
-            uploadedByName: m.uploadedBy?.name || 'Unknown',
-            createdAt: m.uploadedAt || m.createdAt,
-            raw: m,
-          }));
-
-          setMaterials(mappedMaterials);
-        } else {
-          console.error('Failed to fetch materials:', data.message);
-          setMaterials([]);
-        }
-      } catch (error) {
-        console.error('Unable to load student materials:', error);
+        setMaterials(mappedMaterials);
+      } else {
+        console.error('Failed to fetch materials:', data.message);
         setMaterials([]);
       }
-    };
+    } catch (error) {
+      console.error('Unable to load student materials:', error);
+      setMaterials([]);
+    }
+  };
 
-    const loadTimetable = async () => {
-      try {
-        const fetched = await authService.getStudentTimetable();
-        const mappedTimetable = (fetched || []).map((t: any) => ({
-          id: t._id,
-          courseId: t.course?._id || t.course,
-          day: t.day,
-          startTime: t.startTime,
-          endTime: t.endTime,
-          room: t.room,
-          facultyId: t.faculty?._id || t.faculty,
-        }));
-        setTimetable(mappedTimetable);
-      } catch (error) {
-        console.error('Unable to load student timetable:', error);
-      }
-    };
+  const loadTimetable = async () => {
+    try {
+      const fetched = await authService.getStudentTimetable();
+      const mappedTimetable = (fetched || []).map((t: any) => ({
+        id: t._id,
+        courseId: t.course?._id || t.course,
+        day: t.day,
+        startTime: t.startTime,
+        endTime: t.endTime,
+        room: t.room,
+        facultyId: t.faculty?._id || t.faculty,
+      }));
+      setTimetable(mappedTimetable);
+    } catch (error) {
+      console.error('Unable to load student timetable:', error);
+    }
+  };
 
+  useEffect(() => {
     loadCourses();
     loadAttendance();
     loadResults();
