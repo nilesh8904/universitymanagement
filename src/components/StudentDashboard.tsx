@@ -90,6 +90,8 @@ export default function StudentDashboard() {
       if (courseId && courseId !== 'all') {
         url += `?courseId=${courseId}`;
       }
+      console.log('📚 Loading materials with courseId:', courseId === 'all' ? 'ALL' : courseId || 'NONE');
+      
       const response = await fetch(`${API_URL}${url}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -100,7 +102,7 @@ export default function StudentDashboard() {
       
       if (data.success) {
         const fetched = data.data;
-        console.log('✅ StudentDashboard: student materials fetched:', fetched);
+        console.log(`✅ StudentDashboard: ${fetched?.length || 0} materials fetched:`, fetched);
 
         const mappedMaterials = (fetched || []).map((m: any) => ({
           id: m._id || m.id,
@@ -115,6 +117,7 @@ export default function StudentDashboard() {
           raw: m,
         }));
 
+        console.log(`📊 Total materials to display: ${mappedMaterials.length}`);
         setMaterials(mappedMaterials);
       } else {
         console.error('Failed to fetch materials:', data.message);
