@@ -150,15 +150,31 @@ export default function StudentDashboard() {
   const loadTimetable = async () => {
     try {
       const fetched = await authService.getStudentTimetable();
+      console.log('📅 Raw timetable data:', fetched);
+      
       const mappedTimetable = (fetched || []).map((t: any) => ({
         id: t._id,
+        course: t.course, // Preserve populated course object
         courseId: t.course?._id || t.course,
         day: t.day,
         startTime: t.startTime,
         endTime: t.endTime,
         room: t.room,
+        faculty: t.faculty, // Preserve populated faculty object
         facultyId: t.faculty?._id || t.faculty,
       }));
+      
+      console.log('📅 Mapped timetable:', mappedTimetable);
+      console.log('📅 Timetable count:', mappedTimetable.length);
+      
+      // Check for duplicates
+      const ids = mappedTimetable.map(t => t.id);
+      const uniqueIds = [...new Set(ids)];
+      if (ids.length !== uniqueIds.length) {
+        console.warn('⚠️ Duplicate timetable entries detected!');
+        console.log('Total entries:', ids.length, 'Unique IDs:', uniqueIds.length);
+      }
+      
       setTimetable(mappedTimetable);
     } catch (error) {
       console.error('Unable to load student timetable:', error);
