@@ -12,26 +12,34 @@ export default function UniversityAdminDashboard() {
 
   const [colleges, setColleges] = useState<College[]>([]);
 
-  const [programs, setPrograms] = useState<Program[]>([
-    { id: 'p1', name: 'Computer Science', code: 'CS', duration: '4 years', degree: 'B.Tech', collegeId: 'col1' },
-    { id: 'p2', name: 'Mechanical Engineering', code: 'ME', duration: '4 years', degree: 'B.Tech', collegeId: 'col1' },
-    { id: 'p3', name: 'Business Administration', code: 'MBA', duration: '2 years', degree: 'MBA', collegeId: 'col2' },
-  ]);
+  const [programs, setPrograms] = useState<Program[]>([]);
 
   const [showAddCollege, setShowAddCollege] = useState(false);
   const [showAddProgram, setShowAddProgram] = useState(false);
   const [newCollege, setNewCollege] = useState({ name: '', code: '', address: '', establishedYear: 2024, dean: '' });
-  const [newProgram, setNewProgram] = useState({ name: '', code: '', duration: '', degree: '', collegeId: '' });
+  const [newProgram, setNewProgram] = useState({ name: '', code: '', duration: '', degree: '', department: '', collegeId: '' });
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [adminsData, collegesData] = await Promise.all([
+        const [adminsData, collegesData, programsData] = await Promise.all([
           authService.getCollegeAdmins(),
           authService.getColleges(),
+          authService.getPrograms(),
         ]);
+
         setCollegeAdmins(adminsData || []);
         setColleges(collegesData || []);
+
+        setPrograms((programsData || []).map((program: any) => ({
+          id: program._id || program.id,
+          name: program.name,
+          code: program.code,
+          duration: program.duration,
+          degree: program.degree,
+          department: program.department,
+          collegeId: program.college?._id || program.college || '',
+        })));
       } catch (err) {
         console.error('Unable to fetch data', err);
       }
@@ -88,11 +96,38 @@ export default function UniversityAdminDashboard() {
     }
   };
 
-  const handleAddProgram = () => {
-    if (newProgram.name && newProgram.code && newProgram.collegeId) {
-      setPrograms([...programs, { ...newProgram, id: `p${programs.length + 1}` }]);
-      setNewProgram({ name: '', code: '', duration: '', degree: '', collegeId: '' });
+  const handleAddProgram = async () => {
+    if (!newProgram.name || !newProgram.code || !newProgram.degree || !newProgram.duration || !newProgram.department || !newProgram.collegeId) {
+      alert('Please fill in all program details');
+      return;
+    }
+
+    try {
+      const createdProgram = await authService.createProgram({
+        name: newProgram.name,
+        code: newProgram.code,
+        duration: newProgram.duration,
+        degree: newProgram.degree,
+        department: newProgram.department,
+        college: newProgram.collegeId,
+      });
+
+      setPrograms([...programs, {
+        id: createdProgram._id || createdProgram.id,
+        name: createdProgram.name,
+        code: createdProgram.code,
+        duration: createdProgram.duration,
+        degree: createdProgram.degree,
+        department: createdProgram.department,
+        collegeId: createdProgram.college?._id || createdProgram.college,
+      }]);
+
+      setNewProgram({ name: '', code: '', duration: '', degree: '', department: '', collegeId: '' });
       setShowAddProgram(false);
+      alert('Program created successfully in database');
+    } catch (error: any) {
+      console.error('Unable to create program:', error);
+      alert(error?.message || 'Failed to create program');
     }
   };
 
@@ -341,6 +376,7 @@ export default function UniversityAdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Degree</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">College</th>
                   </tr>
                 </thead>
@@ -351,8 +387,9 @@ export default function UniversityAdminDashboard() {
                       <td className="px-6 py-4 text-sm text-gray-600">{program.code}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{program.degree}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{program.duration}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{program.department || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {colleges.find(c => c.id === program.collegeId)?.name}
+                        {colleges.find(c => (c._id || c.id) === program.collegeId)?.name || 'Unknown'}
                       </td>
                     </tr>
                   ))}
@@ -391,6 +428,13 @@ export default function UniversityAdminDashboard() {
                       placeholder="Duration (e.g., 4 years)"
                       value={newProgram.duration}
                       onChange={(e) => setNewProgram({ ...newProgram, duration: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Department (e.g., Computer Science)"
+                      value={newProgram.department}
+                      onChange={(e) => setNewProgram({ ...newProgram, department: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     <select
