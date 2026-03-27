@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Course, Attendance, Result, Timetable } from '../types';
+import { Course, Attendance, Timetable } from '../types';
 import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config/api';
 
 export default function StudentDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'attendance' | 'results' | 'timetable' | 'materials' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'attendance' | 'faculty' | 'timetable' | 'materials' | 'profile'>('overview');
   
   const [courses, setCourses] = useState<Course[]>([]);
 
@@ -16,7 +16,7 @@ export default function StudentDashboard() {
 
   const [timetable, setTimetable] = useState<Timetable[]>([]);
 
-  const [results, setResults] = useState<Result[]>([]);
+  const [faculty, setFaculty] = useState<any[]>([]);
 
 
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -65,22 +65,39 @@ export default function StudentDashboard() {
     }
   };
 
-  const loadResults = async () => {
+  const loadFaculty = async () => {
     try {
-      const fetched = await authService.getStudentResults();
-      const mappedResults = (fetched || []).map((r: any) => ({
-        id: r._id,
-        studentId: r.student?._id || r.student,
-        courseId: r.course?._id || r.course,
-        examType: r.examType,
-        marks: r.marks,
-        maxMarks: r.maxMarks,
-        grade: r.grade,
-        semester: r.semester,
-      }));
-      setResults(mappedResults);
+      const response = await fetch(`${API_URL}/student/faculty`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const fetched = data.data || [];
+        console.log(`✅ StudentDashboard: ${fetched.length} faculty members fetched`);
+        
+        const mappedFaculty = fetched.map((f: any) => ({
+          id: f._id,
+          name: f.name,
+          email: f.email,
+          department: f.facultyInfo?.department || 'N/A',
+          specialization: f.facultyInfo?.specialization || 'N/A',
+          phone: f.facultyInfo?.phone || 'N/A',
+          employeeId: f.facultyInfo?.employeeId || 'N/A',
+        }));
+        
+        setFaculty(mappedFaculty);
+      } else {
+        console.error('❌ API returned success: false', data.message);
+        setFaculty([]);
+      }
     } catch (error) {
-      console.error('Unable to load student results:', error);
+      console.error('❌ Error loading faculty:', error);
+      setFaculty([]);
     }
   };
 
@@ -184,7 +201,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     loadCourses();
     loadAttendance();
-    loadResults();
+    loadFaculty();
     loadMaterials();
     loadTimetable();
   }, []);
@@ -235,14 +252,6 @@ export default function StudentDashboard() {
     return ((present / studentAttendance.length) * 100).toFixed(1);
   };
 
-  const calculateGPA = () => {
-    const gradePoints: { [key: string]: number } = { 'A+': 4.0, 'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7, 'C+': 2.3, 'C': 2.0 };
-    const studentResults = results.filter(r => r.studentId === studentId);
-    if (studentResults.length === 0) return 0;
-    const totalPoints = studentResults.reduce((sum, r) => sum + (gradePoints[r.grade] || 0), 0);
-    return (totalPoints / studentResults.length).toFixed(2);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
@@ -254,7 +263,7 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="flex space-x-8 border-b overflow-x-auto">
-            {(['overview', 'courses', 'attendance', 'results', 'timetable', 'materials', 'profile'] as const).map((tab) => (
+            {(['overview', 'courses', 'attendance', 'faculty', 'timetable', 'materials', 'profile'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -274,7 +283,7 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
@@ -314,20 +323,6 @@ export default function StudentDashboard() {
                   <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Current GPA</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{calculateGPA()}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
                 </div>
@@ -466,13 +461,13 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {activeTab === 'results' && (
+        {activeTab === 'faculty' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">My Results</h2>
+              <h2 className="text-xl font-semibold text-gray-900">College Faculty</h2>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Current GPA</p>
-                <p className="text-2xl font-bold text-purple-600">{calculateGPA()}</p>
+                <p className="text-sm text-gray-600">Total Faculty</p>
+                <p className="text-2xl font-bold text-blue-600">{faculty.length}</p>
               </div>
             </div>
 
@@ -480,37 +475,23 @@ export default function StudentDashboard() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marks</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Semester</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Specialization</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {results.filter(r => r.studentId === studentId).map((result) => {
-                    const course = courses.find(c => c.id === result.courseId);
-                    const percentage = ((result.marks / result.maxMarks) * 100).toFixed(1);
-                    return (
-                      <tr key={result.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{course?.name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{result.examType}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {result.marks}/{result.maxMarks} ({percentage}%)
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-sm font-bold rounded-full ${
-                            result.grade.startsWith('A') ? 'bg-green-100 text-green-800' :
-                            result.grade.startsWith('B') ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {result.grade}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{result.semester}</td>
-                      </tr>
-                    );
-                  })}
+                  {faculty.map((member) => (
+                    <tr key={member.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{member.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.department}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.specialization}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.phone}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
