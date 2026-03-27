@@ -75,11 +75,6 @@ export const authService = {
     return data.data;
   },
 
-  createCollegeMaterial: async (payload: { title: string; description?: string; courseId: string; url: string; type?: string }) => {
-    const data = await apiRequest('/college/materials', 'POST', payload);
-    return data.data;
-  },
-
   enrollStudentInCourse: async (courseId: string, studentId: string) => {
     const data = await apiRequest(`/college/courses/${courseId}/enroll`, 'POST', { studentId });
     return data;
