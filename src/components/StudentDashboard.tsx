@@ -112,7 +112,7 @@ export default function StudentDashboard() {
             courseId: m.course?._id || m.course || '',
             courseName: m.course?.name || m.courseName || 'Unknown Course',
             uploadedByName: m.uploadedBy?.name || 'Unknown',
-            createdAt: m.createdAt || m.createdAt,
+            createdAt: m.uploadedAt || m.createdAt,
             raw: m,
           }));
 
