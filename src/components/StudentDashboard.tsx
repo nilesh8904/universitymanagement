@@ -173,26 +173,37 @@ export default function StudentDashboard() {
         id: t._id,
         course: t.course, // Preserve populated course object
         courseId: t.course?._id || t.course,
+        courseName: t.course?.name || (typeof t.course === 'string' ? t.course : 'N/A'),
         day: t.day,
         startTime: t.startTime,
         endTime: t.endTime,
         room: t.room,
         faculty: t.faculty, // Preserve populated faculty object
         facultyId: t.faculty?._id || t.faculty,
+        facultyName: t.faculty?.name || 'N/A',
       }));
       
       console.log('📅 Mapped timetable:', mappedTimetable);
       console.log('📅 Timetable count:', mappedTimetable.length);
       
-      // Check for duplicates
-      const ids = mappedTimetable.map(t => t.id);
-      const uniqueIds = [...new Set(ids)];
-      if (ids.length !== uniqueIds.length) {
-        console.warn('⚠️ Duplicate timetable entries detected!');
-        console.log('Total entries:', ids.length, 'Unique IDs:', uniqueIds.length);
+      // Remove duplicate timetable entries by id to prevent double rows in UI
+      const uniqueTimetableMap = mappedTimetable.reduce((acc: Record<string, any>, entry) => {
+        if (entry.id) {
+          acc[entry.id] = entry;
+        } else {
+          // fallback unique key for safety
+          acc[`${entry.courseId}-${entry.day}-${entry.startTime}-${entry.endTime}-${entry.room}`] = entry;
+        }
+        return acc;
+      }, {});
+      const uniqueTimetable = Object.values(uniqueTimetableMap);
+
+      if (mappedTimetable.length !== uniqueTimetable.length) {
+        console.warn('⚠️ Duplicate timetable entries removed because of duplicated IDs or content.');
+        console.log('Original:', mappedTimetable.length, 'Unique:', uniqueTimetable.length);
       }
-      
-      setTimetable(mappedTimetable);
+
+      setTimetable(uniqueTimetable);
     } catch (error) {
       console.error('Unable to load student timetable:', error);
     }
@@ -500,10 +511,10 @@ export default function StudentDashboard() {
                     {timetable.map((entry) => (
                       <tr key={entry._id || entry.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {entry.course?.name || 'N/A'}
+                          {entry.courseName || entry.course?.name || 'N/A'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {entry.faculty?.name || 'N/A'}
+                          {entry.facultyName || entry.faculty?.name || 'N/A'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {entry.day || 'N/A'}
