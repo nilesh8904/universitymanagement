@@ -34,12 +34,14 @@ export interface College {
 }
 
 export interface Program {
-  id: string;
+  _id?: string;
+  id?: string;
   name: string;
   code: string;
   duration: string;
   degree: string;
   collegeId: string;
+  department?: string;
 }
 
 export interface Course {
